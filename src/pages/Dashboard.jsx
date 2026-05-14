@@ -119,12 +119,16 @@ export default function Dashboard() {
             </div>
             <motion.button
               onClick={handleRefresh}
-              whileHover={{ scale: 1.05, rotate: 180 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              transition={{ rotate: { duration: 0.5 } }}
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-lg shadow-blue-500/20"
             >
-              <RefreshCw size={18} />
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              >
+                <RefreshCw size={18} />
+              </motion.div>
               <span>Refresh</span>
             </motion.button>
           </div>
