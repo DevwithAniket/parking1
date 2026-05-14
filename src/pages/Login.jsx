@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Car } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -73,13 +74,85 @@ export default function Login() {
     }
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: 'easeOut',
+      },
+    },
+  }
+
+  const formVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.4,
+        ease: 'easeOut',
+      },
+    },
+  }
+
   return (
-    <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} py-12 px-4`}>
-      <div
-        className={`max-w-md w-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8 animate-slide-in`}
+    <div className={`min-h-screen flex items-center justify-center p-4 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      </div>
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className={`max-w-md w-full relative ${
+          theme === 'dark'
+            ? 'bg-gray-800/80 backdrop-blur-glass border border-gray-700/50'
+            : 'bg-white/80 backdrop-blur-glass border border-gray-200/50'
+        } rounded-3xl shadow-2xl p-8 glass-panel`}
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
+        }}
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            className="flex justify-center mb-4"
+          >
+            <div className={`p-4 rounded-2xl ${theme === 'dark' ? 'bg-gradient-to-br from-blue-900/50 to-cyan-900/50' : 'bg-gradient-to-br from-blue-100 to-cyan-100'}`}>
+              <Car className="w-10 h-10 text-blue-600" />
+            </div>
+          </motion.div>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500 mb-2">
             {isRegister ? 'Create Account' : 'Welcome Back'}
           </h1>
           <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -87,22 +160,44 @@ export default function Login() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 bg-red-100 dark:bg-red-900 border border-red-400 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-4 bg-red-500/20 border border-red-500/50 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm backdrop-blur-sm"
+            >
+              {error}
+            </motion.div>
+          )}
 
-        {message && (
-          <div className="mb-4 bg-green-100 dark:bg-green-900 border border-green-400 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg text-sm">
-            {message}
-          </div>
-        )}
+          {message && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-4 bg-green-500/20 border border-green-500/50 text-green-700 dark:text-green-300 px-4 py-3 rounded-xl text-sm backdrop-blur-sm"
+            >
+              {message}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <motion.form
+          variants={formVariants}
+          initial="hidden"
+          animate="visible"
+          onSubmit={handleSubmit}
+          className="space-y-5"
+        >
           {isRegister && !otpSent && (
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 Full Name
               </label>
               <input
@@ -110,74 +205,81 @@ export default function Login() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                   theme === 'dark'
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                    : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                    ? 'bg-gray-700/60 border-gray-600/50 text-white placeholder-gray-400'
+                    : 'bg-white/60 border-gray-300 text-gray-900 placeholder-gray-500'
                 }`}
               />
-            </div>
+            </motion.div>
           )}
 
           {!otpSent && (
             <>
-              <div>
-                <label className={`block text-sm font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <Mail size={16} />
                   Email Address
                 </label>
-                <div className="relative">
-                  <Mail className={`absolute left-3 top-3 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                        : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
-                    }`}
-                  />
-                </div>
-              </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                    theme === 'dark'
+                      ? 'bg-gray-700/60 border-gray-600/50 text-white placeholder-gray-400'
+                      : 'bg-white/60 border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </motion.div>
 
-              <div>
-                <label className={`block text-sm font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <Lock size={16} />
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className={`absolute left-3 top-3 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className={`w-full pl-10 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                       theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                        : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                        ? 'bg-gray-700/60 border-gray-600/50 text-white placeholder-gray-400'
+                        : 'bg-white/60 border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
                   />
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'} transition`}
                   >
-                    {showPassword ? (
-                      <EyeOff className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-                    ) : (
-                      <Eye className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-                    )}
-                  </button>
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             </>
           )}
 
           {otpSent && (
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 Email OTP
               </label>
               <input
@@ -187,56 +289,79 @@ export default function Login() {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 placeholder="Enter 6-digit OTP"
-                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-2xl tracking-widest transition-all ${
                   theme === 'dark'
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                    : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                    ? 'bg-gray-700/60 border-gray-600/50 text-white placeholder-gray-400'
+                    : 'bg-white/60 border-gray-300 text-gray-900 placeholder-gray-500'
                 }`}
               />
               <p className={`mt-2 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 We sent the OTP to {email}.
               </p>
-            </div>
+            </motion.div>
           )}
 
-          <button
+          <motion.button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition mt-6"
+            whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+            whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-500 disabled:to-gray-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-blue-500/30 mt-6"
           >
-            {isSubmitting
-              ? 'Please wait...'
-              : isRegister && !otpSent
-                ? 'Send OTP'
-                : isRegister
-                  ? 'Verify & Create Account'
-                  : 'Sign In'}
-          </button>
-        </form>
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                />
+                Processing...
+              </span>
+            ) : isRegister && !otpSent ? (
+              'Send OTP'
+            ) : isRegister ? (
+              'Verify & Create Account'
+            ) : (
+              'Sign In'
+            )}
+          </motion.button>
+        </motion.form>
 
-        <p className={`mt-6 text-center text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className={`mt-6 text-center text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+        >
           {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <button
+          <motion.button
             onClick={() => {
               setIsRegister(!isRegister)
               resetSignupState()
             }}
+            whileHover={{ scale: 1.05 }}
             className="text-blue-600 hover:text-blue-700 font-semibold"
           >
             {isRegister ? 'Sign In' : 'Sign Up'}
-          </button>
-        </p>
+          </motion.button>
+        </motion.p>
 
-        <div className={`mt-8 p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-blue-50'} border ${theme === 'dark' ? 'border-gray-600' : 'border-blue-200'}`}>
-          <p className={`text-xs font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className={`mt-8 p-4 rounded-2xl ${theme === 'dark' ? 'bg-gray-700/60 border border-gray-600/50' : 'bg-blue-50/80 border border-blue-200'} backdrop-blur-sm`}
+        >
+          <p className={`text-xs font-semibold mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-blue-700'}`}>
+            <Car size={14} />
             Demo Credentials:
           </p>
           <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             Email: demo@smartpark.com<br />
             Password: demo123
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }
