@@ -223,30 +223,30 @@ export default function BookingModal({ slotId, onClose, onSubmit, theme, calcula
                   <div className={`${theme === 'dark' ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30' : 'bg-gradient-to-r from-blue-50 to-cyan-50'} p-6 rounded-2xl border ${
                     theme === 'dark' ? 'border-blue-700/50' : 'border-blue-200'
                   } space-y-4`}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Slot Number</p>
-                      <p className="text-2xl font-bold">{slotId}</p>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Start Time</p>
-                      <p className="text-2xl font-bold">{timeStart}</p>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Duration</p>
-                      <p className="text-2xl font-bold">{duration} Hour(s)</p>
-                    </motion.div>
+                     <motion.div
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       transition={{ delay: 0.1 }}
+                     >
+                       <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Slot Number</p>
+                       <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{slotId}</p>
+                     </motion.div>
+                     <motion.div
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       transition={{ delay: 0.2 }}
+                     >
+                       <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Start Time</p>
+                       <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{timeStart}</p>
+                     </motion.div>
+                     <motion.div
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       transition={{ delay: 0.3 }}
+                     >
+                       <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Duration</p>
+                       <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{duration} Hour(s)</p>
+                     </motion.div>
                     <motion.hr
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}

@@ -57,7 +57,7 @@ export default function MyBookings() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -138,7 +138,7 @@ export default function MyBookings() {
                           Slot Number
                         </p>
                         <motion.p
-                          className="text-3xl font-bold"
+                          className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
                           initial={{ scale: 0.8 }}
                           animate={{ scale: 1 }}
                           transition={{ type: 'spring', stiffness: 300 }}
@@ -262,7 +262,7 @@ export default function MyBookings() {
                           Slot Number
                         </p>
                         <motion.p
-                          className="text-3xl font-bold"
+                          className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
                           initial={{ scale: 0.8 }}
                           animate={{ scale: 1 }}
                           transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}

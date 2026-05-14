@@ -9,28 +9,24 @@ export default function Toast({ notification, theme }) {
   const isError = notification.type === 'error'
 
   const toastVariants = {
-    hidden: { opacity: 0, y: -50, scale: 0.8, x: 100 },
+    hidden: { opacity: 0, scale: 0.9 },
     visible: {
       opacity: 1,
-      y: 0,
       scale: 1,
-      x: 0,
       transition: {
-        type: 'spring',
-        damping: 20,
-        stiffness: 300,
+        duration: 0.15,
+        ease: 'easeOut',
       },
     },
     exit: {
       opacity: 0,
-      x: 100,
-      scale: 0.8,
-      transition: { duration: 0.2 },
+      scale: 0.9,
+      transition: { duration: 0.1 },
     },
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div
         variants={toastVariants}
         initial="hidden"
@@ -48,12 +44,12 @@ export default function Toast({ notification, theme }) {
             background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
             backdropFilter: 'blur(12px)',
           }}
-          whileHover={{ scale: 1.03 }}
+          whileHover={{ scale: 1.02 }}
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 500 }}
+            transition={{ delay: 0, type: 'spring', stiffness: 500 }}
           >
             {isSuccess ? (
               <CheckCircle className="text-green-600 flex-shrink-0" size={24} />
@@ -66,7 +62,6 @@ export default function Toast({ notification, theme }) {
           </span>
           {notification.type === 'error' && (
             <motion.button
-              onClick={() => {}}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className={`p-1 rounded-full ${theme === 'dark' ? 'hover:bg-red-800' : 'hover:bg-red-200'} transition`}

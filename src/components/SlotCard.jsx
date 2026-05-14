@@ -9,7 +9,7 @@ export default function SlotCard({ slot, onBook, theme, isBooked = false }) {
         return {
           bgColor: theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100',
           borderColor: theme === 'dark' ? 'border-green-500/50' : 'border-green-300',
-          textColor: 'text-green-600',
+          textColor: 'text-green-600 dark:text-green-400',
           badgeBg: 'bg-green-500',
           buttonBg: 'bg-gradient-to-r from-green-600 to-emerald-600',
           buttonHover: 'hover:from-green-700 hover:to-emerald-700',
@@ -18,7 +18,7 @@ export default function SlotCard({ slot, onBook, theme, isBooked = false }) {
         return {
           bgColor: theme === 'dark' ? 'bg-yellow-500/20' : 'bg-yellow-100',
           borderColor: theme === 'dark' ? 'border-yellow-500/50' : 'border-yellow-300',
-          textColor: 'text-yellow-600',
+          textColor: 'text-yellow-600 dark:text-yellow-400',
           badgeBg: 'bg-yellow-500',
           buttonBg: 'bg-gray-400',
           buttonHover: 'hover:bg-gray-500',
@@ -27,7 +27,7 @@ export default function SlotCard({ slot, onBook, theme, isBooked = false }) {
         return {
           bgColor: theme === 'dark' ? 'bg-red-500/20' : 'bg-red-100',
           borderColor: theme === 'dark' ? 'border-red-500/50' : 'border-red-300',
-          textColor: 'text-red-600',
+          textColor: 'text-red-600 dark:text-red-400',
           badgeBg: 'bg-red-500',
           buttonBg: 'bg-gray-400',
           buttonHover: 'hover:bg-gray-500',
@@ -36,7 +36,7 @@ export default function SlotCard({ slot, onBook, theme, isBooked = false }) {
         return {
           bgColor: theme === 'dark' ? 'bg-gray-600/20' : 'bg-gray-100',
           borderColor: theme === 'dark' ? 'border-gray-600' : 'border-gray-300',
-          textColor: 'text-gray-600',
+          textColor: 'text-gray-600 dark:text-gray-400',
           badgeBg: 'bg-gray-500',
           buttonBg: 'bg-gray-400',
           buttonHover: 'hover:bg-gray-500',

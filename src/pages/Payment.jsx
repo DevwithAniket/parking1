@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 export default function Payment() {
   const { theme } = useAuth()
-  const { showNotification } = useParking()
+  const { showNotification, bookSlot } = useParking()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -22,13 +22,15 @@ export default function Payment() {
 
   const slotId = searchParams.get('slotId') || '1'
   const amount = searchParams.get('amount') || '50'
-  const bookingId = searchParams.get('bookingId')
+
+  // Get pending booking details from sessionStorage
+  const pendingBooking = JSON.parse(sessionStorage.getItem('pendingBooking') || 'null')
 
   useEffect(() => {
-    if (!bookingId) {
+    if (!pendingBooking) {
       navigate('/dashboard')
     }
-  }, [bookingId, navigate])
+  }, [pendingBooking, navigate])
 
   const handleCardNumberChange = (e) => {
     let value = e.target.value.replace(/\s/g, '')
@@ -66,24 +68,39 @@ export default function Payment() {
     setIsProcessing(true)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      await apiService.processPayment(bookingId, amount)
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      // Call the API to process payment (just records the payment)
+      await apiService.processPayment('pending', amount)
+
+      // Only after payment succeeds, create the actual booking
+      const booking = await bookSlot(
+        pendingBooking.slotId,
+        pendingBooking.duration,
+        pendingBooking.timeStart
+      )
+
       setIsProcessing(false)
       setPaymentSuccess(true)
       showNotification('Payment successful! Booking confirmed.', 'success')
 
+      // Clear pending booking from sessionStorage
+      sessionStorage.removeItem('pendingBooking')
+
+      // Redirect to my bookings after 3 seconds
       setTimeout(() => {
         navigate('/my-bookings')
       }, 3000)
-    } catch {
+    } catch (err) {
       setIsProcessing(false)
-      showNotification('Payment failed. Please try again.', 'error')
+      showNotification(err.response?.data?.message || 'Payment failed. Please try again.', 'error')
     }
   }
 
   if (paymentSuccess) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-4 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+     return (
+       <div className={`min-h-screen flex items-center justify-center p-4 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
         {/* Background celebration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[...Array(20)].map((_, i) => (
@@ -154,7 +171,7 @@ export default function Payment() {
           >
             <div className="flex justify-between mb-3">
               <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Slot Number:</span>
-              <span className="font-bold text-xl">#{slotId}</span>
+              <span className={`font-bold text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>#{slotId}</span>
             </div>
             <div className="flex justify-between">
               <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Amount Paid:</span>
@@ -191,8 +208,12 @@ export default function Payment() {
     )
   }
 
-  return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} py-8 px-4`}>
+  if (!pendingBooking) {
+    return null
+  }
+
+   return (
+     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} py-8 px-4`}>
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
         {/* Payment Form */}
         <motion.div
@@ -202,12 +223,7 @@ export default function Payment() {
           className={`${theme === 'dark' ? 'bg-gray-800/80' : 'bg-white/90'} backdrop-blur-glass rounded-3xl shadow-2xl p-8 glass-panel`}
         >
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-            >
-              <CreditCard className="text-blue-600" size={28} />
-            </motion.div>
+            <CreditCard className="text-blue-600" size={28} />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
               Payment Details
             </span>
@@ -345,34 +361,42 @@ export default function Payment() {
           <div className={`${theme === 'dark' ? 'bg-gray-800/80' : 'bg-white/90'} backdrop-blur-glass rounded-3xl shadow-2xl p-8 glass-panel`}>
             <h3 className="text-2xl font-bold mb-6">Order Summary</h3>
 
-            <div className={`mb-6 p-5 rounded-2xl ${theme === 'dark' ? 'bg-gray-700/60' : 'bg-gray-50/80'} backdrop-blur-sm`}>
-              <div className="flex justify-between mb-4">
-                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Slot Number</span>
-                <span className="font-bold text-xl">#{slotId}</span>
-              </div>
-              <div className="flex justify-between mb-4">
-                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Booking Amount</span>
-                <span className="font-bold text-blue-600">₹{amount}</span>
-              </div>
-              <motion.hr
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className={`my-4 ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}
-              />
-              <div className="flex justify-between text-lg">
-                <span className="font-bold">Total Amount</span>
-                <motion.span
-                  key={amount}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                  className="font-bold text-blue-600"
-                >
-                  ₹{amount}
-                </motion.span>
-              </div>
-            </div>
+             <div className={`mb-6 p-5 rounded-2xl ${theme === 'dark' ? 'bg-gray-700/60' : 'bg-gray-50/80'} backdrop-blur-sm`}>
+               <div className="flex justify-between mb-4">
+                 <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Slot Number</span>
+                 <span className={`font-bold text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>#{slotId}</span>
+               </div>
+               <div className="flex justify-between mb-4">
+                 <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Duration</span>
+                 <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{pendingBooking.duration} Hour(s)</span>
+               </div>
+               <div className="flex justify-between mb-4">
+                 <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Start Time</span>
+                 <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{pendingBooking.timeStart}</span>
+               </div>
+               <div className="flex justify-between mb-4">
+                 <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Booking Amount</span>
+                 <span className="font-bold text-blue-600">₹{amount}</span>
+               </div>
+               <motion.hr
+                 initial={{ scaleX: 0 }}
+                 animate={{ scaleX: 1 }}
+                 transition={{ delay: 0.4, duration: 0.5 }}
+                 className={`my-4 ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}
+               />
+               <div className="flex justify-between text-lg">
+                 <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Total Amount</span>
+                 <motion.span
+                   key={amount}
+                   initial={{ scale: 0 }}
+                   animate={{ scale: 1 }}
+                   transition={{ type: 'spring', stiffness: 300 }}
+                   className="font-bold text-blue-600"
+                 >
+                   ₹{amount}
+                 </motion.span>
+               </div>
+             </div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}

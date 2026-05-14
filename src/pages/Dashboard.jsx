@@ -20,25 +20,30 @@ export default function Dashboard() {
     setShowModal(true)
   }
 
-  const handleBookingSubmit = async (bookingData) => {
-    setIsLoading(true)
-    try {
-      const booking = await bookSlot(bookingData.slotId, bookingData.duration, bookingData.timeStart)
-      showNotification(`Slot ${bookingData.slotId} booked successfully!`, 'success')
-      setShowModal(false)
-      setSelectedSlot(null)
+   const handleBookingSubmit = async (bookingData) => {
+     setIsLoading(true)
+     try {
+       // Store booking details in sessionStorage before redirect
+       const pendingBooking = {
+         slotId: bookingData.slotId,
+         duration: bookingData.duration,
+         timeStart: bookingData.timeStart,
+         price: bookingData.price,
+       }
+       sessionStorage.setItem('pendingBooking', JSON.stringify(pendingBooking))
 
-      setTimeout(() => {
-        window.location.href = `/payment?slotId=${bookingData.slotId}&amount=${booking.price}&bookingId=${booking.id}`
-      }, 800)
-    } catch (err) {
-      showNotification(err.response?.data?.message || 'Failed to book slot', 'error')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+       // Redirect to payment page
+       window.location.href = `/payment?slotId=${bookingData.slotId}&amount=${bookingData.price}`
+       setShowModal(false)
+       setSelectedSlot(null)
+     } catch (err) {
+       showNotification(err.response?.data?.message || 'Failed to proceed to payment', 'error')
+     } finally {
+       setIsLoading(false)
+     }
+   }
 
-  const handleRefresh = async () => {
+   const handleRefresh = async () => {
     try {
       await refreshSlots()
       showNotification('Slot status refreshed!', 'success')
@@ -81,7 +86,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -108,14 +113,14 @@ export default function Dashboard() {
                   Parking Dashboard
                 </span>
               </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
-              >
-                Welcome back, {user?.email || 'User'}!
-              </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                >
+                  Welcome back, {user?.name || user?.email || 'User'}!
+                </motion.p>
             </div>
             <motion.button
               onClick={handleRefresh}
