@@ -45,7 +45,7 @@ A modern, responsive React + Vite + Tailwind CSS frontend for an IoT-powered sma
 - **React Router v6** - Navigation
 - **Tailwind CSS** - Styling
 - **Lucide React** - Icons
-- **Axios** - API calls (mock)
+- **Axios** - API calls
 - **Context API** - State management
 
 ## Project Structure
@@ -69,7 +69,7 @@ src/
 │   ├── AuthContext.jsx    # Auth state management
 │   └── ParkingContext.jsx # Parking state & logic
 ├── services/
-│   └── api.js             # API service (mock)
+│   └── api.js             # API service
 ├── App.jsx                # Main app component
 ├── main.jsx               # Entry point
 └── index.css              # Global styles
@@ -105,6 +105,8 @@ src/
 
    The backend runs at `http://localhost:5000/api` and stores users, hashed passwords, parking slots, reservations, and test payments in `server/data/db.json`.
 
+   For real OTP emails, create a `.env` file from `.env.example` and fill in your SMTP settings. Without SMTP settings, the backend prints the OTP in the server console for local testing.
+
 5. **Build for production:**
    ```bash
    npm run build
@@ -123,6 +125,10 @@ Use these credentials to test the application:
 - **Password:** demo123
 
 New accounts are stored by the backend. The seeded demo account is available for testing.
+
+New signups require email OTP verification before the user is created. OTPs expire after 10 minutes.
+
+Accounts that have not been active for 3 days are automatically removed from the local database during normal server requests. The seeded demo account is kept for testing.
 
 ## Test Card Details (Payment)
 
@@ -200,15 +206,22 @@ For payment testing:
 
 The app now calls the local backend in `server/server.js`. Set `VITE_API_URL` if you want the frontend to target another API host.
 
-### Mock API Endpoints
+### Auth Endpoints
+
+```javascript
+POST /api/register/start          // Send OTP to signup email
+POST /api/register/verify         // Verify OTP and create account
+POST /api/login                   // User login
+GET /api/me                       // Restore current session
+```
+
+### Parking Endpoints
 
 ```javascript
 GET /api/slots                    // Get all parking slots
-POST /api/book                    // Book a slot
-POST /api/login                   // User login
-POST /api/register                // User registration
+POST /api/bookings                // Book a slot
 POST /api/payment                 // Process payment
-GET /api/bookings/:userId         // Get user bookings
+GET /api/bookings                 // Get current user's bookings
 POST /api/bookings/:id/cancel     // Cancel booking
 ```
 

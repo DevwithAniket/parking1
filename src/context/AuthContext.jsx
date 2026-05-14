@@ -41,8 +41,13 @@ export function AuthProvider({ children }) {
     return response.data.user
   }
 
-  const register = async (email, password, name) => {
-    const response = await apiService.register(email, password, name)
+  const startRegistration = async (email, password, name) => {
+    const response = await apiService.startRegistration(email, password, name)
+    return response.data
+  }
+
+  const verifyRegistration = async (email, otp) => {
+    const response = await apiService.verifyRegistration(email, otp)
     localStorage.setItem('smartpark_token', response.data.token)
     setUser(response.data.user)
     setIsAuthenticated(true)
@@ -60,7 +65,19 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isAuthLoading, theme, login, register, logout, toggleTheme }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isAuthLoading,
+        theme,
+        login,
+        startRegistration,
+        verifyRegistration,
+        logout,
+        toggleTheme,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

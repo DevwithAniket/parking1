@@ -22,8 +22,12 @@ export const apiService = {
     return api.post('/login', { email, password })
   },
 
-  register: async (email, password, name) => {
-    return api.post('/register', { email, password, name })
+  startRegistration: async (email, password, name) => {
+    return api.post('/register/start', { email, password, name })
+  },
+
+  verifyRegistration: async (email, otp) => {
+    return api.post('/register/verify', { email, otp })
   },
 
   me: async () => {

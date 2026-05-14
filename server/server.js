@@ -3,13 +3,33 @@ import { randomBytes, pbkdf2Sync, timingSafeEqual, createHmac } from 'node:crypt
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import nodemailer from 'nodemailer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const ROOT_DIR = join(__dirname, '..')
+const ENV_FILE = join(ROOT_DIR, '.env')
+
+if (existsSync(ENV_FILE)) {
+  const lines = readFileSync(ENV_FILE, 'utf8').split(/\r?\n/)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue
+
+    const [key, ...valueParts] = trimmed.split('=')
+    if (!process.env[key]) {
+      process.env[key] = valueParts.join('=').trim()
+    }
+  }
+}
+
 const DATA_DIR = join(__dirname, 'data')
 const DB_FILE = join(DATA_DIR, 'db.json')
 const PORT = Number(process.env.PORT || 5000)
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'smartpark-dev-secret-change-me'
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const OTP_TTL_MS = 10 * 60 * 1000
+const INACTIVE_TTL_MS = 3 * 24 * 60 * 60 * 1000
+const DEMO_EMAIL = 'demo@smartpark.com'
 
 const DEFAULT_SLOTS = [
   { id: 1, status: 'available' },
@@ -30,22 +50,30 @@ function ensureDatabase() {
         {
           id: 1,
           name: 'Demo User',
-          email: 'demo@smartpark.com',
+          email: DEMO_EMAIL,
           passwordHash: demoPassword.hash,
           passwordSalt: demoPassword.salt,
           createdAt: new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
         },
       ],
       slots: DEFAULT_SLOTS,
       bookings: [],
       payments: [],
+      pendingRegistrations: [],
     })
   }
 }
 
 function readDatabase() {
   ensureDatabase()
-  return JSON.parse(readFileSync(DB_FILE, 'utf8'))
+  const db = JSON.parse(readFileSync(DB_FILE, 'utf8'))
+  db.pendingRegistrations ||= []
+  db.payments ||= []
+  db.bookings ||= []
+  db.slots ||= DEFAULT_SLOTS
+  db.users ||= []
+  return db
 }
 
 function writeDatabase(db) {
@@ -96,6 +124,75 @@ function publicUser(user) {
   }
 }
 
+function createOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
+
+function cleanupDatabase(db) {
+  const now = Date.now()
+  const deletedUserIds = new Set()
+
+  db.pendingRegistrations = db.pendingRegistrations.filter(registration => {
+    return new Date(registration.expiresAt).getTime() > now
+  })
+
+  db.users = db.users.filter(user => {
+    const lastActiveAt = new Date(user.lastActiveAt || user.createdAt).getTime()
+    const isExpired = user.email !== DEMO_EMAIL && lastActiveAt + INACTIVE_TTL_MS < now
+    if (isExpired) deletedUserIds.add(user.id)
+    return !isExpired
+  })
+
+  if (deletedUserIds.size > 0) {
+    const deletedBookings = db.bookings.filter(booking => deletedUserIds.has(booking.userId))
+    for (const booking of deletedBookings) {
+      const slot = db.slots.find(candidate => candidate.id === booking.slotId)
+      if (slot && slot.status === 'booked') slot.status = 'available'
+    }
+
+    db.bookings = db.bookings.filter(booking => !deletedUserIds.has(booking.userId))
+    db.payments = db.payments.filter(payment => !deletedUserIds.has(payment.userId))
+  }
+
+  return deletedUserIds.size > 0
+}
+
+function createMailTransport() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return null
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  })
+}
+
+async function sendOtpEmail(email, otp) {
+  const transport = createMailTransport()
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER
+
+  if (!transport) {
+    console.log(`SmartPark OTP for ${email}: ${otp}`)
+    return { delivered: false, devOtp: otp }
+  }
+
+  await transport.sendMail({
+    from,
+    to: email,
+    subject: 'Your SmartPark verification OTP',
+    text: `Your SmartPark verification OTP is ${otp}. It expires in 10 minutes.`,
+    html: `<p>Your SmartPark verification OTP is <strong>${otp}</strong>.</p><p>It expires in 10 minutes.</p>`,
+  })
+
+  return { delivered: true }
+}
+
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
@@ -137,7 +234,9 @@ function authenticate(req, db) {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
   const payload = parseToken(token)
   if (!payload) return null
-  return db.users.find(user => user.id === payload.userId) || null
+  const user = db.users.find(candidate => candidate.id === payload.userId) || null
+  if (user) user.lastActiveAt = new Date().toISOString()
+  return user
 }
 
 function nextId(records) {
@@ -146,6 +245,13 @@ function nextId(records) {
 
 function calculatePrice(duration) {
   return Math.ceil(Number(duration) * 5)
+}
+
+function runScheduledCleanup() {
+  const db = readDatabase()
+  if (cleanupDatabase(db)) {
+    writeDatabase(db)
+  }
 }
 
 function routePattern(path, pattern) {
@@ -172,6 +278,8 @@ async function handleRequest(req, res) {
 
   const url = new URL(req.url, `http://${req.headers.host}`)
   const db = readDatabase()
+  const cleaned = cleanupDatabase(db)
+  if (cleaned) writeDatabase(db)
 
   try {
     if (req.method === 'GET' && url.pathname === '/api/health') {
@@ -179,7 +287,7 @@ async function handleRequest(req, res) {
       return
     }
 
-    if (req.method === 'POST' && url.pathname === '/api/register') {
+    if (req.method === 'POST' && url.pathname === '/api/register/start') {
       const { email, password, name } = await readBody(req)
       const normalizedEmail = String(email || '').trim().toLowerCase()
 
@@ -198,17 +306,70 @@ async function handleRequest(req, res) {
         return
       }
 
+      const otp = createOtp()
       const hashed = hashPassword(String(password))
-      const user = {
-        id: nextId(db.users),
+      const otpHash = hashPassword(otp)
+      const pendingRegistration = {
+        id: nextId(db.pendingRegistrations),
         name: String(name).trim(),
         email: normalizedEmail,
         passwordHash: hashed.hash,
         passwordSalt: hashed.salt,
+        otpHash: otpHash.hash,
+        otpSalt: otpHash.salt,
         createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + OTP_TTL_MS).toISOString(),
+      }
+
+      db.pendingRegistrations = db.pendingRegistrations.filter(registration => registration.email !== normalizedEmail)
+      db.pendingRegistrations.push(pendingRegistration)
+      writeDatabase(db)
+
+      const emailResult = await sendOtpEmail(normalizedEmail, otp)
+      sendJson(res, 200, {
+        message: emailResult.delivered
+          ? 'Verification OTP sent to your email.'
+          : 'SMTP is not configured. Use the server console OTP for local testing.',
+        devOtp: emailResult.devOtp,
+      })
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/register/verify') {
+      const { email, otp } = await readBody(req)
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      const pendingRegistration = db.pendingRegistrations.find(registration => registration.email === normalizedEmail)
+
+      if (!pendingRegistration) {
+        sendJson(res, 404, { message: 'No pending registration found for this email.' })
+        return
+      }
+
+      if (new Date(pendingRegistration.expiresAt).getTime() < Date.now()) {
+        db.pendingRegistrations = db.pendingRegistrations.filter(registration => registration.email !== normalizedEmail)
+        writeDatabase(db)
+        sendJson(res, 410, { message: 'OTP expired. Please request a new one.' })
+        return
+      }
+
+      const attemptedOtp = hashPassword(String(otp || ''), pendingRegistration.otpSalt).hash
+      if (attemptedOtp !== pendingRegistration.otpHash) {
+        sendJson(res, 401, { message: 'Invalid OTP.' })
+        return
+      }
+
+      const user = {
+        id: nextId(db.users),
+        name: pendingRegistration.name,
+        email: pendingRegistration.email,
+        passwordHash: pendingRegistration.passwordHash,
+        passwordSalt: pendingRegistration.passwordSalt,
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
       }
 
       db.users.push(user)
+      db.pendingRegistrations = db.pendingRegistrations.filter(registration => registration.email !== normalizedEmail)
       writeDatabase(db)
       sendJson(res, 201, { token: createToken(user), user: publicUser(user) })
       return
@@ -224,6 +385,8 @@ async function handleRequest(req, res) {
         return
       }
 
+      user.lastActiveAt = new Date().toISOString()
+      writeDatabase(db)
       sendJson(res, 200, { token: createToken(user), user: publicUser(user) })
       return
     }
@@ -235,6 +398,7 @@ async function handleRequest(req, res) {
         sendJson(res, 401, { message: 'Authentication required.' })
         return
       }
+      writeDatabase(db)
       sendJson(res, 200, { user: publicUser(currentUser) })
       return
     }
@@ -354,3 +518,5 @@ createServer(handleRequest).listen(PORT, () => {
     console.log(`SmartPark backend listening on http://localhost:${PORT}`)
   }
 })
+
+setInterval(runScheduledCleanup, 60 * 60 * 1000).unref()
