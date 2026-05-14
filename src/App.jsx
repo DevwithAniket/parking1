@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import Payment from './pages/Payment'
 import MyBookings from './pages/MyBookings'
 import ProtectedRoute from './pages/ProtectedRoute'
+import ChatBot from './components/ChatBot'
 import { AnimatePresence } from 'framer-motion'
 
 function AppContent() {
@@ -56,6 +57,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>
+      <ChatBot theme={theme} />
     </div>
   )
 }
